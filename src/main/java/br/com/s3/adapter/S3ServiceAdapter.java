@@ -1,5 +1,6 @@
-package adapter;
+package br.com.s3.adapter;
 
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -10,14 +11,18 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 
+@Component
 public class S3ServiceAdapter {
 
     private final S3Client s3Client;
 
 
-    public S3ServiceAdapter(S3Client s3Client) {
+    // Inicializa o cliente S3 com as configurações padrão
+    // As credenciais são obtidas automaticamente do ambiente (variáveis, IAM role, etc)
+    // TODO: Definir o region utilizando variável de ambiente
+    public S3ServiceAdapter() {
         this.s3Client = S3Client.builder()
-                .region(Region.US_EAST_1)
+                .region(Region.of("sa-east-1"))
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
     }
