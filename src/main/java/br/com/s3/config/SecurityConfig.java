@@ -18,7 +18,7 @@ public class SecurityConfig {
 			.csrf(csrf -> csrf.disable())
 			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/api/v1/attachment/upload", "/api/v1/attachment/upload/attachment").permitAll()
+				.requestMatchers("/api/v1/attachment/upload", "/api/v1/attachment/upload/attachment", "/api/v1/attachment/batch-presigned").permitAll()
 				.anyRequest().permitAll()
 			)
 			.httpBasic(Customizer.withDefaults());

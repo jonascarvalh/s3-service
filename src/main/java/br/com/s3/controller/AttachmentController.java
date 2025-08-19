@@ -2,6 +2,8 @@ package br.com.s3.controller;
 
 import br.com.s3.controller.dto.request.attachment.AttachmentUploadRequestDto;
 import br.com.s3.controller.dto.response.attachment.AttachmentUploadResponseDto;
+import br.com.s3.controller.dto.request.attachment.AttachmentBatchUploadRequestDto;
+import br.com.s3.controller.dto.response.attachment.AttachmentBatchPresignedUrlResponseDto;
 import br.com.s3.service.AttachmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -22,8 +24,14 @@ public class AttachmentController {
     private final AttachmentService attachmentService;
 
 	@PostMapping(value = "/upload", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<AttachmentUploadResponseDto> uploadFiles(@RequestBody @Valid AttachmentUploadRequestDto request) {
+	public ResponseEntity<AttachmentUploadResponseDto> uploadFile(@RequestBody @Valid AttachmentUploadRequestDto request) {
 		AttachmentUploadResponseDto response = attachmentService.uploadFile(request);
+		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping(value = "/batch-presigned", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<AttachmentBatchPresignedUrlResponseDto> uploadFiles(@RequestBody @Valid AttachmentBatchUploadRequestDto request) {
+		AttachmentBatchPresignedUrlResponseDto response = attachmentService.uploadFiles(request);
 		return ResponseEntity.ok(response);
 	}
 }
