@@ -17,5 +17,8 @@ import lombok.ToString;
 @Builder
 public class AttachmentUploadResponseDto {
 
-    private String message;
+	private String url;
+	private String bucket;
+	private String key;
+	private Long expiresInSeconds;
 }

@@ -1,14 +1,12 @@
 package br.com.s3.service;
 
+import br.com.s3.adapter.S3ServiceAdapter;
 import br.com.s3.controller.dto.request.attachment.AttachmentUploadRequestDto;
 import br.com.s3.controller.dto.response.attachment.AttachmentUploadResponseDto;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
-import br.com.s3.adapter.S3ServiceAdapter;
+import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
+import java.time.Duration;
 
 @Service
 public class AttachmentServiceImpl implements AttachmentService {
@@ -18,33 +16,56 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Value("${s3.bucket}")
     private String bucket;
 
+    @Value("${s3.presign.expires-seconds}")
+    private Long pressignExpiresSeconds;
+
     public AttachmentServiceImpl(S3ServiceAdapter s3ServiceAdapter) {
         this.s3ServiceAdapter = s3ServiceAdapter;
     }
 
-    @Override
-    public AttachmentUploadResponseDto uploadFiles(AttachmentUploadRequestDto requestDto, List<MultipartFile> files) {
-        if (files == null || files.isEmpty()) {
-            return AttachmentUploadResponseDto.builder().message("Nenhum arquivo enviado").build();
-        }
+	@Override
+	public AttachmentUploadResponseDto uploadFile(AttachmentUploadRequestDto requestDto) {
+		validateToUpload(requestDto);
 
-        String prefix = requestDto != null ? requestDto.getPrefix() : null;
-        if (prefix == null) {
-            prefix = "";
-        }
-        if (prefix.startsWith("/")) {
-            prefix = prefix.substring(1);
-        }
-        if (!prefix.isEmpty() && !prefix.endsWith("/")) {
-            prefix = prefix + "/";
-        }
+		String prefix = formatPrefix(requestDto.getPrefix());
+		String key = prefix + requestDto.getKey();
 
-        for (MultipartFile file : files) {
-            String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
-            String key = prefix + UUID.randomUUID() + "_" + original;
-            s3ServiceAdapter.uploadFile(bucket, key, file);
-        }
+		String url = s3ServiceAdapter.generatePresignedPutUrl(bucket, key, requestDto.getContentType(),
+				Duration.ofSeconds(pressignExpiresSeconds));
+            
+		return generateAttachmentUploadResponseDto(url, key);
+	}
 
-        return AttachmentUploadResponseDto.builder().message("Arquivos enviados com sucesso").build();
-    }
+	void validateToUpload(AttachmentUploadRequestDto requestDto) {
+		if (requestDto.getPrefix() == null || requestDto.getPrefix().isEmpty()) {
+			throw new IllegalArgumentException("O prefixo nao pode ser nulo ou vazio.");
+		}
+
+		if (requestDto.getKey() == null || requestDto.getKey().isEmpty()) {
+			throw new IllegalArgumentException("O key nao pode ser nulo ou vazio.");
+		}
+
+		if (requestDto.getContentType() == null || requestDto.getContentType().isEmpty()) {
+			throw new IllegalArgumentException("O content type nao pode ser nulo ou vazio.");
+		}
+	}
+
+	private static String formatPrefix(String prefix) {
+		if (prefix.startsWith("/")) {
+			prefix = prefix.substring(1);
+		}
+		if (!prefix.endsWith("/")) {
+			prefix = prefix + "/";
+		}
+		return prefix;
+	}
+
+	private AttachmentUploadResponseDto generateAttachmentUploadResponseDto(String url, String key) {
+		return AttachmentUploadResponseDto.builder()
+				.url(url)
+				.bucket(bucket)
+				.key(key)
+				.expiresInSeconds(pressignExpiresSeconds)
+				.build();
+	}
 }
