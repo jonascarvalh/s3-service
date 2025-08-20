@@ -29,7 +29,7 @@ public class AttachmentController {
 		return ResponseEntity.ok(response);
 	}
 
-	@PostMapping(value = "/batch-presigned", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping(value = "/upload-files", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<AttachmentBatchPresignedUrlResponseDto> uploadFiles(@RequestBody @Valid AttachmentBatchUploadRequestDto request) {
 		AttachmentBatchPresignedUrlResponseDto response = attachmentService.uploadFiles(request);
 		return ResponseEntity.ok(response);
