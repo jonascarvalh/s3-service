@@ -35,7 +35,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 		String prefix = formatPrefix(requestDto.getPrefix());
 		String key = prefix + requestDto.getKey();
 
-		String url = s3ServiceAdapter.generatePutPresigedUrl(bucket, key, requestDto.getContentType(),
+		String url = s3ServiceAdapter.generatePutPresignedUrl(bucket, key, requestDto.getContentType(),
 				Duration.ofSeconds(pressignExpiresSeconds));
             
 		return generateAttachmentUploadResponseDto(url, key);
@@ -61,7 +61,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 		String key = prefix + fileRequest.getKey();
 		String contentType = fileRequest.getContentType() != null ? fileRequest.getContentType() : "application/octet-stream";
 
-		String url = s3ServiceAdapter.generatePutPresigedUrl(bucket, key, contentType,
+		String url = s3ServiceAdapter.generatePutPresignedUrl(bucket, key, contentType,
 				Duration.ofSeconds(pressignExpiresSeconds));
 
 		return AttachmentUploadedResponseDto.builder()
