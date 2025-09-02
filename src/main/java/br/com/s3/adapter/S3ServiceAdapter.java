@@ -7,9 +7,12 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
@@ -62,7 +65,46 @@ public class S3ServiceAdapter {
 		}
 	}
 
-	public String generatePresignedPutUrl(String bucket, String key, String contentType, Duration expiresIn) {
+    /**
+     * Gera uma URL pré-assinada (presigned URL) para permitir o acesso de leitura
+     * temporário a um objeto no S3, sem a necessidade de credenciais da AWS.
+     *
+     * @param bucket Nome do bucket onde o objeto está localizado.
+     * @param key Caminho/nome do objeto no S3.
+     * @param expirationInSeconds Duração, em segundos, da validade da URL.
+     * @return A URL pré-assinada como uma String.
+     * @throws RuntimeException em caso de erro na geração da URL.
+     */
+    public String generateGetPresignedUrl(String bucket, String key, Integer expirationInSeconds) {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofSeconds(expirationInSeconds))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        try {
+            PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
+            return presigned.url().toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar URL pré-assinada: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gera uma URL pré-assinada (presigned URL) que permite o upload (PUT) de um
+     * arquivo para uma chave específica no S3. Ideal para uploads diretos do cliente.
+     *
+     * @param bucket Nome do bucket de destino.
+     * @param key Caminho/nome que o objeto terá no S3 após o upload.
+     * @param contentType O tipo de conteúdo (MIME type) do arquivo a ser enviado (ex: "image/jpeg").
+     * @param expiresIn A duração da validade da URL.
+     * @return A URL pré-assinada para upload como uma String.
+     */
+	public String generatePutPresignedUrl(String bucket, String key, String contentType, Duration expiresIn) {
 		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
 				.bucket(bucket)
 				.key(key)
