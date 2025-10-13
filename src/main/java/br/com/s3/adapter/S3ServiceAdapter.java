@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -48,22 +49,21 @@ public class S3ServiceAdapter {
      * @throws RuntimeException em caso de erro no upload
      */
     public void uploadFile(String bucket, String key, MultipartFile file) {
-        try {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL)
-                    .build();
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(file.getContentType())
+                .acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL)
+                .build();
 
-			s3Client.putObject(putObjectRequest,
-					RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-		} catch (IOException e) {
-			throw new RuntimeException("Erro ao fazer upload do arquivo: " + e.getMessage());
-		} catch (Exception e) {
-			throw new RuntimeException("Erro ao comunicar com o S3: " + e.getMessage());
-		}
-	}
+        try {
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao fazer upload do arquivo.");
+        } catch (Exception e) {
+            throw new RuntimeException("Falha na comunicação com o serviço S3.");
+        }
+    }
 
     /**
      * Gera uma URL pré-assinada (presigned URL) para permitir o acesso de leitura
@@ -95,28 +95,22 @@ public class S3ServiceAdapter {
     }
 
     /**
-     * Gera uma URL pré-assinada (presigned URL) que permite o upload (PUT) de um
-     * arquivo para uma chave específica no S3. Ideal para uploads diretos do cliente.
+     * Remove um arquivo do bucket S3 especificado.
      *
-     * @param bucket Nome do bucket de destino.
-     * @param key Caminho/nome que o objeto terá no S3 após o upload.
-     * @param contentType O tipo de conteúdo (MIME type) do arquivo a ser enviado (ex: "image/jpeg").
-     * @param expiresIn A duração da validade da URL.
-     * @return A URL pré-assinada para upload como uma String.
+     * @param bucket Nome do bucket no S3
+     * @param key Caminho/nome do arquivo no S3 (ex: uploads/123/documento.pdf)
+     * @throws RuntimeException em caso de erro na exclusão do arquivo
      */
-	public String generatePutPresignedUrl(String bucket, String key, String contentType, Duration expiresIn) {
-		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-				.bucket(bucket)
-				.key(key)
-				.contentType(contentType)
-				.build();
+    public void deleteFile(String bucket, String key) {
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
 
-		PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-				.signatureDuration(expiresIn)
-				.putObjectRequest(putObjectRequest)
-				.build();
-
-		PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
-		return presigned.url().toString();
-	}
+        try {
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao excluir arquivo do S3: " + e.getMessage());
+        }
+    }
 }
